@@ -22,7 +22,6 @@ program main
     b(2) = 1.3d0
     b(3) = 1.1d0
     
-    !x(:) = 0.0d0
     x(:) = Gaussian_Elimination(a, b, n)
     r(:) = b(:) - matmul(a, x)
     write(*, *) 'x =', x
@@ -33,7 +32,6 @@ end program main
 module solver
     implicit none
     contains
-
     function Gaussian_Elimination(a0, b0, n) result(x)
         integer, intent(in) :: n
         real(8), intent(in) :: a0(n, n), b0(n)
