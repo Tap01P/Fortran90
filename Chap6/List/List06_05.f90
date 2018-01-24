@@ -27,15 +27,6 @@ program main
     end do
     ! ディレクレ境界条件の設定
     phi = 0.0d0
-    do j = 1, n2
-        phi(1, j) = 0.0d0
-    end do
-    do j = 1, n2
-        phi(n1, j) = 0.0d0
-    end do
-    do i = 1, n1
-        phi(i, n2) = 0.0d0
-    end do
     do i = 1, n1
         phi(i, 1) = sin(pi * x(1, i, 1) )
     end do
