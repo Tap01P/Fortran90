@@ -4,7 +4,7 @@
 program main
     implicit none
     integer i, j, itr
-    integer, parameter :: n1 = 101, n2 = 101, itrmax = 100
+    integer, parameter :: n1 = 101, n2 = 101, itrmax = 1000
     real(8) x(2, n1, n2), phi(n1, n2)
     real(8) dx1, dx2, rhs, er, c, d, omega
     real(8) :: pi = 2.0d0 * acos(0.0d0) ,er0 = 10E-6
@@ -26,7 +26,7 @@ program main
         end do
     end do
     ! ディレクレ境界条件の設定
-    phi = 0.2d0
+    phi = 0.0d0
     do j = 1, n2
         phi(1, j) = 0.0d0
     end do
@@ -63,6 +63,7 @@ program main
     close(10)
     open(11, file = 'plotNsol.plt')
     write(11, *) 'reset'
+    write(11, *) 'set view 60, 120, 1, 1'
     write(11, *) 'set pm3d'
     write(11, *) 'set palette rgbformulae 33, 13, 10'
     write(11, *) 'splot "LaplaceNu.dat" with pm3d'
