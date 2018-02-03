@@ -37,8 +37,8 @@ program main
     use SetMethods
     implicit none
     integer i, j, itr, k
-    integer, parameter :: n1 = 501, n2 = 501, itrmax = 1000
-    real(8) x(2, n1, n2), phi(n1, n2), dx1, dx2, c, d, er, rhs, omega0, omega
+    integer, parameter :: n1 = 101, n2 = 101, itrmax = 1000
+    real(8) x(2, n1, n2), phi(n1, n2), c, d, er, rhs, omega0, omega
     real(8) :: pi = 2.0 * acos(0.0d0)
     real(8) :: er0 = 10E-6
     omega0 = 2.0d0 / (1.0d0 + sin(pi / dble(n1 - 1)))
