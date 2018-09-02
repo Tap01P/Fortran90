@@ -72,6 +72,46 @@ subroutine cm1d(pnext, pprev, i, v, dt, dx, n)
         pnext(i) = pprev(i) - cno * (pprev(i-1) - pprev(i))
     end if
 end subroutine cm1d
+
+subroutine bc_thru(pn,qn, p, q, v, w, n, dt, dx)
+    ! 境界のpn, qnを定めるサブルーチン
+    integer, intent(in) :: n
+    real(8), intent(in) :: p(n), q(n), v(n), w(n), dt, dx
+    real(8), intent(out) :: pn(n), qn(n)
+    integer i
+    real(8) cno1, cno2
+    do i = 1, n, n - 1 ! このループにおいて、iは1とnという値のみを取る
+        pn(i) = p(i) ! 直前のステップをデフォルト値として設定する
+        qn(i) = q(i) ! 同上
+        cno1 = v(i) * dt / dx ! クーラン数の算出
+        cno2 = w(i) * dt / dx ! 同上
+        if (i == 1) then ! 上流端（特性速度が負ならpn,qnを計算:正ならデフォルト値を採用）
+            if (cno1 < 0.0d0) pn(i) = p(i) - cno1 * (p(i+1) - p(i))
+            if (cno2 < 0.0d0) qn(i) = q(i) - cno2 * (q(i+1) - q(i))
+        else if (i == n) then ! 下流端(特性速度が正ならpn,qnを計算:負ならデフォルト値を採用)
+            if (cno1 > 0.0d0) pn(i) = p(i) - cno1 * (p(i) - p(i-1))
+            if (cno2 > 0.0d0) qn(i) = q(i) - cno2 * (q(i) - q(i-1))
+        end if
+    end do
+end subroutine
+
+subroutine pq2uhvw(pn, qn, gr, u, h, v, w, n)
+    integer, intent(in) :: n
+    real(8), intent(in) :: pn(n), qn(n), gr
+    real(8), intent(out) :: u(n), h(n), v(n), w(n)
+    integer i
+    real(8) c
+    do i = 1, n
+        ! u, c, hをpn, qnから算出する
+        u(i) = pn(i) - qn(i)
+        c    = 0.5d0 * (pn(i) + qn(i))
+        h(i) = c * c / gr
+        ! v, wをu, cから算出する
+        v(i) = u(i) + c
+        w(i) = u(i) - c
+    end do
+end subroutine pq2uhvw
+
 end module SWeqmethods
 
 program main
