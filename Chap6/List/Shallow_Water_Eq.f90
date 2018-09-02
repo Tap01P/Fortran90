@@ -5,10 +5,11 @@ implicit none
 contains 
 subroutine set_init(n, dt, xl, dx, fr, gr, itrmax, pintv, h0, dh, &
                     x, u, v, w, h, p, q, pn, qn)
+    integer i
     integer, intent(out) :: n, itrmax, pintv
     real(8), intent(out) :: dt, xl, fr, gr, h0, dx, dh
-    real(8), intent(out) :: x(:), u(:), h(:) 
-    real(8), intent(out) :: v(:), w(:), p(:), q(:), pn(:), qn(:)
+    real(8), allocatable, intent(out) :: x(:), u(:), h(:) 
+    real(8), allocatable, intent(out) :: v(:), w(:), p(:), q(:), pn(:), qn(:)
     open(10, file = 'sweqdata.dat')
     read(10, *) n, itrmax, pintv
     read(10, *) dt, xl, fr, gr, h0
@@ -16,7 +17,7 @@ subroutine set_init(n, dt, xl, dx, fr, gr, itrmax, pintv, h0, dh, &
     dx = xl / dble(n - 1)
     dh = 0.1d0 * h0
     allocate (x(n), u(n), v(n), w(n), h(n), p(n), q(n), pn(n), qn(n))
-    x(:) (/ (dx * dble(n - 1), i = 1, n) /)
+    x(:) = (/ (dx * dble(i - 1), i = 1, n) /)
     u(:) = sqrt(gr * h0) * fr
     h(:) = h0 + dh * exp(- (x(:) - 0.5d0 * xl) ** 2 / 1.0d2)
     v(:) = u(:) + sqrt(gr * h(:))
@@ -28,38 +29,73 @@ subroutine set_init(n, dt, xl, dx, fr, gr, itrmax, pintv, h0, dh, &
 end subroutine set_init
 
 subroutine print_uh(x, h, u, gr, n, fopen)
+    integer i
     integer, intent(in) :: n, fopen
     real(8), intent(in) :: x(n), h(n), u(n), gr
-    if (fopen == 1) then
+    if (fopen == 1) then ! fopen=1ならファイルをopenする
         open(20, file = 'ud.dat')
-    else if (fopen == -1)
+    else if (fopen == -1) then ! fopen=-1ならファイルをcloseしてreturn
         close(20)
         return
     end if
     do i = 1, n
+        ! 各格子点上のx, h, u, フルード数の出力
         write(20, '(10e16.8)') x(i), h(i), u(i), u(i) / sqrt(gr * h(i))
     end do
-    write(20, *) ''
+    write(20, *) '' ! gnuplotによる描画のため空行を入れておく
 end subroutine print_uh
 
-subroutine chk_cno
+subroutine chk_cno(n, dx, dt, v, w)
+    ! クーラン数をチェックするサブルーチン
+    integer, intent(in) :: n
+    real(8), intent(in) :: dx, dt, v(n), w(n)
+    real(8) cno1, cno2, cno
+    cno1 = maxval(abs(v(:)) * dt / dx )
+    cno2 = maxval(abs(w(:)) * dt / dx )
+    cno = max(cno1, cno2)
+    if (cno >= 1.0d0) then
+        write(*, *) 'stop, cno >=1, cno=', cno
+        stop
+    end if
 end subroutine chk_cno
+
+subroutine cm1d(pnext, pprev, i, v, dt, dx, n)
+    ! 内部格子点のpn, qnを特性方程式から求めるサブルーチン
+    integer, intent(in) :: i, n
+    real(8), intent(in) :: pprev(n), v(n), dt, dx
+    real(8), intent(out) :: pnext(n)
+    real(8) cno
+    cno = v(i) * dt / dx ! クーラン数の算出
+    if (cno >= 0.0d0) then ! 特性曲線の出発点位置に応じて空間内挿
+        pnext(i) = pprev(i) - cno * (pprev(i) - pprev(i-1))
+    else
+        pnext(i) = pprev(i) - cno * (pprev(i-1) - pprev(i))
+    end if
+end subroutine cm1d
 end module SWeqmethods
 
 program main
     use SWeqmethods
     implicit none
     real(8), allocatable :: x(:), u(:), v(:), w(:), h(:)
-    real(8), allocatable :: p(:), q(:), pn(:), q(:)
+    real(8), allocatable :: p(:), q(:), pn(:), qn(:)
     real(8) dt, dx, xl, fr, gr, h0, dh
     integer n, itr, itrmax, i, pintv
     ! 変数値, 初期条件等の設定
+    call set_init(n, dt, xl, dx, fr, gr, itrmax, pintv, h0, dh, &
+                  x, u, v, w, h, p, q, pn, qn)
     ! 出力ファイルを開き、初期条件を出力
+    call print_uh(x, h, u, gr, n, 1)
     ! 時間に関してループ計算を行う
+    do itr = 1, itrmax
         ! クーラン数のチェック
+        call chk_cno(n, dx, dt, v, w)
         ! 内部格子点のpnとqnを特性方程式から定める
+        call cm1d(pn, p, i, v, dt, dx, n)
+        call cm1d(qn, q, i, w, dt, dx, n)
         ! 境界上のpnとqnを求める
         ! 全格子点のpとqを更新する
         ! ファイル出力
+    end do
     ! メモリ解放
 end program main
