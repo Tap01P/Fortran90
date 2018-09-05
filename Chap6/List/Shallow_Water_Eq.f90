@@ -10,7 +10,7 @@ subroutine set_init(n, dt, xl, dx, fr, gr, itrmax, pintv, h0, dh, &
     real(8), intent(out) :: dt, xl, fr, gr, h0, dx, dh
     real(8), allocatable, intent(out) :: x(:), u(:), h(:) 
     real(8), allocatable, intent(out) :: v(:), w(:), p(:), q(:), pn(:), qn(:)
-    open(10, file = 'sweqdata.dat')
+    open(10, file = 'sweqdata')
     read(10, *) n, itrmax, pintv
     read(10, *) dt, xl, fr, gr, h0
     close(10)
@@ -134,8 +134,15 @@ program main
         call cm1d(pn, p, i, v, dt, dx, n)
         call cm1d(qn, q, i, w, dt, dx, n)
         ! 境界上のpnとqnを求める
+        call bc_thru(pn, qn, p, q, v, w, n, dt, dx)
         ! 全格子点のpとqを更新する
+        p(:) = pn(:)
+        q(:) = qn(:)
         ! ファイル出力
+        if (mod(itr, pintv) == 0) call print_uh(x, h, u, gr, n, 0)
     end do
+    ! 出力ファイルをcloseする
+    call print_uh(x, h, u, gr, n, -1)
     ! メモリ解放
+    deallocate(x, u, v, w, h, p, q, pn, qn)
 end program main
