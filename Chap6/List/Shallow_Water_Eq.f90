@@ -69,7 +69,7 @@ subroutine cm1d(pnext, pprev, i, v, dt, dx, n)
     if (cno >= 0.0d0) then ! 特性曲線の出発点位置に応じて空間内挿
         pnext(i) = pprev(i) - cno * (pprev(i) - pprev(i-1))
     else
-        pnext(i) = pprev(i) - cno * (pprev(i-1) - pprev(i))
+        pnext(i) = pprev(i) - cno * (pprev(i+1) - pprev(i))
     end if
 end subroutine cm1d
 
@@ -130,11 +130,13 @@ program main
     do itr = 1, itrmax
         ! クーラン数のチェック
         call chk_cno(n, dx, dt, v, w)
-        ! 内部格子点のpnとqnを特性方程式から定める
-        call cm1d(pn, p, i, v, dt, dx, n)
-        call cm1d(qn, q, i, w, dt, dx, n)
+        do i = 2, n - 1 ! 内部格子点のpnとqnを特性方程式から定める
+            call cm1d(pn, p, i, v, dt, dx, n)
+            call cm1d(qn, q, i, w, dt, dx, n)
+        end do
         ! 境界上のpnとqnを求める
         call bc_thru(pn, qn, p, q, v, w, n, dt, dx)
+        call pq2uhvw(pn, qn, gr, u, h, v, w, n)
         ! 全格子点のpとqを更新する
         p(:) = pn(:)
         q(:) = qn(:)
