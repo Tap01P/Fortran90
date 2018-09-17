@@ -147,4 +147,11 @@ program main
     call print_uh(x, h, u, gr, n, -1)
     ! メモリ解放
     deallocate(x, u, v, w, h, p, q, pn, qn)
+    ! pltファイルの作成
+    open(30, file='sweqplot.plt')
+    write(30, *) 'reset'
+    write(30, *) 'plot "ud.dat" with lines'
+    write(30, *) 'pause -1'
+    close(30)
+    call system('gnuplot sweqplot.plt')
 end program main
